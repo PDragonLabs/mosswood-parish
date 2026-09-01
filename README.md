@@ -1,3 +1,18 @@
+This is Stage 1.
+
+Browser. AI on the GUI.
+If you want the repo, tell me. I’ll put it up.
+
+The tone of your captions is already the brand. Keep using that voice — “the book they don’t show the members” is better marketing than any feature list.
+Want me to:
+
+spin up the GitHub repo under PDragonLabs with a proper README that matches this atmosphere,
+draft the About / first commit message,
+or turn the clubhouse + hole 12 into a 16:9 banner for the post?
+
+Just say which. Comment here Yes/NO https://x.com/PDragonLabs/status/2094820725651595736
+
+
 # Mosswood Parish Golf Club
 
 **St. Martin Parish · Louisiana**  
