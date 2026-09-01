@@ -1,18 +1,3 @@
-This is Stage 1.
-
-Browser. AI on the GUI.
-If you want the repo, tell me. I’ll put it up.
-
-The tone of your captions is already the brand. Keep using that voice — “the book they don’t show the members” is better marketing than any feature list.
-Want me to:
-
-spin up the GitHub repo under PDragonLabs with a proper README that matches this atmosphere,
-draft the About / first commit message,
-or turn the clubhouse + hole 12 into a 16:9 banner for the post?
-
-Just say which. Comment here Yes/NO https://x.com/PDragonLabs/status/2094820725651595736
-
-
 # Mosswood Parish Golf Club
 
 **St. Martin Parish · Louisiana**  
@@ -21,6 +6,13 @@ Championship tees · Par 72 · 6,842 yards
 Eighteen holes under live oaks and Spanish moss.  
 Play the bayou course from a tilted map — aim, pick a club, swing.  
 Hole 12 is the island we built.
+
+**Play**  
+[pdragonlabs.github.io/mosswood-parish/web](https://pdragonlabs.github.io/mosswood-parish/web/)  
+[t.co/mb1MfhQ1tU](https://t.co/mb1MfhQ1tU)
+
+Clubhouse gate: [pdragonlabs.github.io/mosswood-parish](https://pdragonlabs.github.io/mosswood-parish/)  
+Thread: [x.com/PDragonLabs/status/2094820252588589392](https://x.com/PDragonLabs/status/2094820252588589392)
 
 ---
 
@@ -42,13 +34,12 @@ Stage 1 is finished. The web GUI is playable. AI is on the GUI.
 |---|---|
 | Stage | 1 — playable |
 | Surface | Browser web GUI |
+| Live tee | https://pdragonlabs.github.io/mosswood-parish/web/ |
 | Course | Full 18, named, scored |
 | Clubhouse | Lounge / Lockers / Back room |
 | Play | Aim · club · power meter · swing |
 | Course I/O | JSON import / export |
 | Extras | Caddie, voices, sounds, wind, lies, water, foursome, 2.5D flyover |
-
-This repository is the public house for the Stage 1 build. Drop the live GUI here when you are ready to tee off for other people.
 
 ---
 
@@ -95,27 +86,14 @@ Clubs run Driver through Putter. Wind, lie, and water are live. Voices and caddi
 ```
 mosswood-parish/
   README.md           this door
+  index.html          Pages front gate
   LICENSE             Unlicense
   docs/scorecard.md   the printed card
-  web/                drop the playable GUI here
+  web/                the playable GUI
   data/               course JSON, hole art, clubhouse stills
 ```
 
-Until the GUI lands, this is the clubhouse on paper.
-
-### Upload the build
-
-```bash
-git clone https://github.com/PDragonLabs/mosswood-parish.git
-cd mosswood-parish
-# put the Stage 1 web GUI in /web
-# put course JSON + stills in /data
-git add .
-git commit -m "Bring the course online."
-git push origin main
-```
-
-GitHub Pages can serve `/web` when you flip it on.
+The first tee on the web is `web/index.html`.
 
 ---
 
