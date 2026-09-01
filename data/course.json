@@ -1,0 +1,29 @@
+{
+  "club": "Mosswood Parish Golf Club",
+  "location": "St. Martin Parish, Louisiana",
+  "tees": "Championship",
+  "par": 72,
+  "yards": 6842,
+  "stage": 1,
+  "notes": "Eighteen holes under live oaks and Spanish moss. Hole 12 is the island we built.",
+  "holes": [
+    {"n": 1, "name": "Cypress Gate", "par": 4, "yards": 392, "hcp": 9},
+    {"n": 2, "name": "Bayou Bend", "par": 5, "yards": 531, "hcp": 3},
+    {"n": 3, "name": "Cathedral", "par": 4, "yards": 418, "hcp": 5},
+    {"n": 4, "name": "Palmetto", "par": 3, "yards": 164, "hcp": 15},
+    {"n": 5, "name": "Cane Cut", "par": 4, "yards": 401, "hcp": 11},
+    {"n": 6, "name": "Alligator Run", "par": 5, "yards": 548, "hcp": 1},
+    {"n": 7, "name": "Spanish Beard", "par": 4, "yards": 387, "hcp": 13},
+    {"n": 8, "name": "Magnolia", "par": 3, "yards": 191, "hcp": 17},
+    {"n": 9, "name": "Parish Line", "par": 4, "yards": 436, "hcp": 7},
+    {"n": 10, "name": "Cottonmouth", "par": 4, "yards": 409, "hcp": 8},
+    {"n": 11, "name": "Lily Cut", "par": 5, "yards": 512, "hcp": 4},
+    {"n": 12, "name": "Isle of Moss", "par": 3, "yards": 168, "hcp": 16, "note": "Island green, two white bunkers, lily pads, no place to miss short."},
+    {"n": 13, "name": "Tabasco", "par": 4, "yards": 375, "hcp": 14},
+    {"n": 14, "name": "Foggy Oaks", "par": 4, "yards": 427, "hcp": 2},
+    {"n": 15, "name": "Pirogue", "par": 3, "yards": 142, "hcp": 18},
+    {"n": 16, "name": "Plantation", "par": 5, "yards": 555, "hcp": 6},
+    {"n": 17, "name": "Hurricane", "par": 4, "yards": 388, "hcp": 12},
+    {"n": 18, "name": "Home Oaks", "par": 4, "yards": 398, "hcp": 10}
+  ]
+}
