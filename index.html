@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mosswood Parish Golf Club</title>
+  <meta name="description" content="St. Martin Parish, Louisiana. Eighteen holes under live oaks and Spanish moss. Stage 1 playable." />
+  <style>
+    :root {
+      --bg: #0d1610;
+      --panel: #14201a;
+      --gold: #d4b56a;
+      --cream: #efe6d0;
+      --muted: #c4b896;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--cream);
+      font-family: Georgia, "Times New Roman", serif;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+    }
+    main {
+      width: min(640px, 100%);
+      background: var(--panel);
+      border: 1px solid rgba(212, 181, 106, 0.35);
+      border-radius: 18px;
+      padding: 40px 36px 32px;
+    }
+    .place {
+      letter-spacing: 0.18em;
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-family: system-ui, sans-serif;
+    }
+    h1 {
+      margin: 12px 0 8px;
+      font-weight: 400;
+      font-size: clamp(32px, 6vw, 46px);
+      line-height: 1.05;
+    }
+    .card {
+      color: var(--muted);
+      margin: 0 0 22px;
+    }
+    p { line-height: 1.55; color: var(--cream); }
+    .rooms {
+      color: var(--muted);
+      font-size: 15px;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+    }
+    a.btn {
+      display: inline-block;
+      text-decoration: none;
+      color: var(--bg);
+      background: var(--gold);
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-family: system-ui, sans-serif;
+      font-size: 14px;
+    }
+    a.ghost {
+      background: transparent;
+      color: var(--gold);
+      border: 1px solid rgba(212, 181, 106, 0.55);
+    }
+    .note {
+      margin-top: 28px;
+      font-size: 13px;
+      color: var(--muted);
+      font-family: system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="place">St. Martin Parish &middot; Louisiana</div>
+    <h1>Mosswood Parish<br/>Golf Club</h1>
+    <p class="card">Championship tees &middot; Par 72 &middot; 6,842 yards</p>
+    <p>Eighteen holes under live oaks and Spanish moss. Play the bayou course from a tilted map &mdash; aim, pick a club, swing. Hole 12 is the island we built.</p>
+    <p class="rooms">Lounge. Lockers. The back room they don't show the members.</p>
+    <div class="actions">
+      <a class="btn" href="./web/">Tee off</a>
+      <a class="btn ghost" href="https://github.com/PDragonLabs/mosswood-parish">Repo</a>
+    </div>
+    <p class="note">Stage 1. Browser. AI on the web GUI. Drop the playable build into <code>web/index.html</code> and this door opens onto the course.</p>
+  </main>
+</body>
+</html>
