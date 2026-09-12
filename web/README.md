@@ -1,26 +1,13 @@
 # web/
 
-Drop the Stage 1 playable GUI here.
+Stage 1 playable GUI lives here.
 
-Expected at minimum:
+Live tee: https://pdragonlabs.github.io/mosswood-parish/web/
 
-- index.html (or the app entry)
-- static assets (css, js, images, audio)
-- course renderer + swing loop
-- clubhouse rooms (lounge, lockers, back room)
+- `index.html` — course renderer, swing loop, clubhouse door, wind + birds (Web Audio)
+- Aim on the map or with the arrows
+- Space / Swing starts the meter; Swing again to hit
+- Caddie, voices, flyover, card, JSON import/export
+- Hole 12 is the island we built
 
-When this folder has an `index.html`, GitHub Pages can serve it from `/web` or the repo root — your call.
-
-This is Stage 1.
-
-Browser. AI on the GUI.
-If you want the repo, tell me. I’ll put it up.
-
-The tone of your captions is already the brand. Keep using that voice — “the book they don’t show the members” is better marketing than any feature list.
-Want me to:
-
-spin up the GitHub repo under PDragonLabs with a proper README that matches this atmosphere,
-draft the About / first commit message,
-or turn the clubhouse + hole 12 into a 16:9 banner for the post?
-
-Just say which. Comment here Yes/NO https://x.com/PDragonLabs/status/2094820725651595736
+Ambient sound starts after the first click (browser rule).
