@@ -44,6 +44,11 @@
     return Math.sin(t * Math.PI) * L.dog;
   }
   function dist2(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+  function remain() { const L = layout(hole()); return dist2(state.ball, {x: L.pinX, y: L.pinY}); }
+  function isPutting() {
+    const club = CLUBS[state.club];
+    return state.lie === "Green" || state.lie === "Cup" || (club && club.id === "PT" && remain() < 40);
+  }
   function lieAt(L, p) {
     if (p.y < -8 || p.y > L.length + 18 || Math.abs(p.x) > 110) return "OB";
     for (const w of L.hazards) if (Math.abs(p.x - w.x) < w.w / 2 && Math.abs(p.y - w.y) < w.hh / 2) return "Water";
@@ -55,13 +60,14 @@
     return "Rough";
   }
   function lieMul(lie) {
-    return ({Tee: 1, Fairway: 0.98, Green: 0.4, Cup: 0, Rough: 0.8, Sand: 0.62, Water: 0, OB: 0})[lie] ?? 0.8;
+    if (isPutting()) return 1;
+    return ({Tee: 1, Fairway: 0.98, Green: 1, Cup: 0, Rough: 0.8, Sand: 0.62, Water: 0, OB: 0})[lie] ?? 0.8;
   }
-  function pickClubAuto(remain, lie) {
-    if (lie === "Green" || remain < 18) return CLUBS.findIndex(c => c.id === "PT");
+  function pickClubAuto(d, lie) {
+    if (lie === "Green" || d < 18) return CLUBS.findIndex(c => c.id === "PT");
     if (lie === "Sand") return CLUBS.findIndex(c => c.id === "SW");
     let best = 0, err = 9999;
-    CLUBS.forEach((c, i) => { if (c.id === "PT") return; const e = Math.abs(c.carry - remain); if (e < err) { err = e; best = i; } });
+    CLUBS.forEach((c, i) => { if (c.id === "PT") return; const e = Math.abs(c.carry - d); if (e < err) { err = e; best = i; } });
     return best;
   }
   function resetBall() {
@@ -76,22 +82,21 @@
   }
   function windArrow() {
     const d = state.wind.dir;
-    if (d > -23 && d < 23) return "\u2191 into";
-    if (d >= 23 && d < 67) return "\u2197";
-    if (d >= 67 && d < 113) return "\u2192";
-    if (d >= 113 && d < 157) return "\u2198";
-    if (d <= -23 && d > -67) return "\u2196";
-    if (d <= -67 && d > -113) return "\u2190";
-    if (d <= -113 && d > -157) return "\u2199";
-    return "\u2193 helping";
+    if (d > -23 && d < 23) return "N into";
+    if (d >= 23 && d < 67) return "NE";
+    if (d >= 67 && d < 113) return "E";
+    if (d >= 113 && d < 157) return "SE";
+    if (d <= -23 && d > -67) return "NW";
+    if (d <= -67 && d > -113) return "W";
+    if (d <= -113 && d > -157) return "SW";
+    return "S helping";
   }
-  function remain() { const L = layout(hole()); return dist2(state.ball, {x: L.pinX, y: L.pinY}); }
   function formatScore() {
     const played = state.scores.map((s, i) => s == null ? 0 : s - HOLES[i].par);
     const n = state.scores.filter(s => s != null).length;
     const tot = played.reduce((a, b) => a + b, 0);
     if (!n || tot === 0) return "E";
-    return tot > 0 ? `+${tot}` : `${tot}`;
+    return tot > 0 ? "+" + tot : String(tot);
   }
   function openLine() {
     const h = hole();
@@ -99,47 +104,84 @@
     if (h.n === 6) return "Alligator Run. Stroke index 1. The long water. Club up or pay.";
     if (h.n === 14) return "Foggy Oaks. The moss comes down to the fairway.";
     if (h.n === 15) return "Pirogue. Shortest on the card. Still wet.";
-    if (h.par === 3) return `${h.name}. ${h.yards} on the card. Don't be cute.`;
-    if (state.wind.spd > 12) return `Wind's up at ${state.wind.spd}. Take an extra club.`;
-    return `${h.name}. Live oaks, Spanish moss. Take what the hole gives you.`;
+    if (h.par === 3) return h.name + ". " + h.yards + " on the card. Don't be cute.";
+    if (state.wind.spd > 12) return "Wind's up at " + state.wind.spd + ". Take an extra club.";
+    return h.name + ". Live oaks, Spanish moss. Take what the hole gives you.";
   }
   function say(text) {
     $("caddie").textContent = text;
     if (state.voice && state.caddieOn) {
       try {
         window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text.replace(/[\u00b7\u2014]/g, ","));
+        const u = new SpeechSynthesisUtterance(text);
         u.rate = 0.92; u.pitch = 0.85; u.volume = 0.8;
         window.speechSynthesis.speak(u);
       } catch (e) {}
     }
   }
-  function log(line) { const el = $("log"); el.innerHTML = `<div>${line}</div>` + el.innerHTML; }
+  function log(line) { const el = $("log"); el.innerHTML = "<div>" + line + "</div>" + el.innerHTML; }
   function hud() {
     const h = hole();
-    $("holeTitle").innerHTML = `${h.name} <small>Par ${h.par} \u00b7 ${h.yards}</small>`;
-    $("footHole").textContent = `Hole ${h.n} of 18`;
-    $("sDist").textContent = `${remain().toFixed(0)} yds`;
+    const left = remain();
+    $("holeTitle").innerHTML = h.name + " <small>Par " + h.par + " · " + h.yards + "</small>";
+    $("footHole").textContent = "Hole " + h.n + " of 18";
+    $("sDist").textContent = isPutting() ? Math.max(1, left * 3).toFixed(0) + " ft" : left.toFixed(0) + " yds";
+    if (isPutting()) { state.aim = Math.max(-10, Math.min(10, state.aim)); $("aim").value = state.aim; }
     $("sStroke").textContent = String(state.stroke);
-    $("sWind").textContent = `${state.wind.spd} mph ${windArrow()}`;
-    $("sLie").textContent = state.lie;
+    $("sWind").textContent = state.wind.spd + " mph " + windArrow();
+    $("sLie").textContent = isPutting() ? "Green · N" : state.lie;
     $("sScore").textContent = formatScore();
     $("sClub").textContent = CLUBS[state.club].name;
-    $("meterFill").style.width = `${Math.max(0, Math.min(100, state.power))}%`;
+    $("meterFill").style.width = Math.max(0, Math.min(100, state.power)) + "%";
     document.querySelectorAll(".clubs button").forEach((b, i) => b.classList.toggle("on", i === state.club));
   }
   function renderClubs() {
-    $("clubs").innerHTML = CLUBS.map((c, i) => `<button type=\"button\" data-i=\"${i}\" title=\"${c.carry} yds\">${c.id}</button>`).join("");
+    $("clubs").innerHTML = CLUBS.map((c, i) => "<button type='button' data-i='" + i + "' title='" + c.carry + " yds'>" + c.id + "</button>").join("");
     $("clubs").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; state.club = +b.dataset.i; hud(); };
   }
   function worldToScreen(L, x, y) {
-    const w = canvas.width, ht = canvas.height, padT = 50, padB = 70;
-    const t = y / L.length, scale = 0.55 + t * 0.9;
+    const w = canvas.width, ht = canvas.height;
+    if (isPutting()) {
+      const span = Math.max(22, L.greenR * 2.8);
+      const px = Math.min(w, ht) * 0.72 / span;
+      return {x: w * 0.5 + (x - L.pinX) * px, y: ht * 0.42 - (y - L.pinY) * px, s: px / 4};
+    }
+    const padT = 50, padB = 70, t = y / L.length, scale = 0.55 + t * 0.9;
     return {x: w * 0.5 + (x + Math.sin(state.cam) * 4) * (3.1 * scale), y: padT + (1 - t) * (ht - padT - padB), s: scale};
+  }
+  function drawGreen(L, w, ht, g) {
+    g.fillStyle = "#1a2a18"; g.fillRect(0, 0, w, ht);
+    const c = worldToScreen(L, L.pinX, L.pinY);
+    g.fillStyle = "#2c4a2c"; g.beginPath(); g.ellipse(c.x, c.y, L.greenR * 3.4 * c.s, L.greenR * 3.4 * c.s, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "#4e8a48"; g.beginPath(); g.ellipse(c.x, c.y, L.greenR * 2.7 * c.s, L.greenR * 2.7 * c.s, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "#0a120e"; g.beginPath(); g.arc(c.x, c.y, Math.max(6, 4.4 * c.s), 0, Math.PI * 2); g.fill();
+    g.strokeStyle = "#efe6d0"; g.lineWidth = 2; g.stroke();
+    g.fillStyle = "#d4b56a"; g.font = "14px system-ui"; g.fillText("N", w * 0.5 - 5, 28); g.fillText("green · north up", 20, 28);
+    g.fillStyle = "#c4a36a";
+    for (const bnk of L.bunkers) {
+      const p = worldToScreen(L, bnk.x, bnk.y);
+      g.beginPath(); g.ellipse(p.x, p.y, bnk.r * 2.8 * p.s, bnk.r * 2.8 * p.s, 0, 0, Math.PI * 2); g.fill();
+    }
   }
   function draw() {
     const h = hole(), L = layout(h), w = canvas.width, ht = canvas.height, g = ctx;
     g.clearRect(0, 0, w, ht);
+    if (isPutting()) {
+      drawGreen(L, w, ht, g);
+      if (!state.flying) {
+        const left = remain();
+        const dist = Math.max(2, Math.min(36, left * (state.power > 4 ? state.power / 100 * 2.2 : 1.15)));
+        const ang = Math.max(-10, Math.min(10, state.aim)) * Math.PI / 180;
+        g.setLineDash([5, 5]); g.strokeStyle = "rgba(239,230,208,0.85)"; g.lineWidth = 2; g.beginPath();
+        const a0 = worldToScreen(L, state.ball.x, state.ball.y);
+        const a1 = worldToScreen(L, state.ball.x + Math.sin(ang) * dist, state.ball.y + Math.cos(ang) * dist);
+        g.moveTo(a0.x, a0.y); g.lineTo(a1.x, a1.y); g.stroke(); g.setLineDash([]);
+      }
+      const bp = worldToScreen(L, state.ball.x, state.ball.y);
+      g.fillStyle = "rgba(0,0,0,0.3)"; g.beginPath(); g.ellipse(bp.x + 2, bp.y + 3, 6, 3, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = "#f6f1e4"; g.beginPath(); g.arc(bp.x, bp.y, 6, 0, Math.PI * 2); g.fill();
+      return;
+    }
     const sky = g.createLinearGradient(0, 0, 0, ht * 0.45);
     if (h.theme === "fog") { sky.addColorStop(0, "#6d7a70"); sky.addColorStop(1, "#2a382c"); }
     else { sky.addColorStop(0, "#6fa0c4"); sky.addColorStop(1, "#1c3a28"); }
@@ -154,15 +196,10 @@
       g.beginPath();
       const x0 = Math.min(a.x, b.x), y0 = Math.min(a.y, b.y), x1 = Math.max(a.x, b.x), y1 = Math.max(a.y, b.y);
       g.roundRect(x0, y0, x1 - x0, y1 - y0, 24); g.fill();
-      if (h.island) {
-        g.fillStyle = "rgba(90,160,90,0.25)";
-        for (let i = 0; i < 8; i++) { g.beginPath(); g.ellipse(x0 + 20 + i * 28, y1 - 16 - (i % 3) * 10, 10, 4, 0, 0, Math.PI * 2); g.fill(); }
-      }
     }
     g.strokeStyle = "#3d6a3a"; g.lineCap = "round";
-    const steps = 28;
-    for (let i = 0; i < steps; i++) {
-      const y = (i / steps) * L.length, p = worldToScreen(L, centerlineX(L, y), y);
+    for (let i = 0; i < 28; i++) {
+      const y = (i / 28) * L.length, p = worldToScreen(L, centerlineX(L, y), y);
       g.lineWidth = L.fw * 2.2 * p.s;
       if (i === 0) { g.beginPath(); g.moveTo(p.x, p.y); } else g.lineTo(p.x, p.y);
     }
@@ -174,8 +211,6 @@
     for (const oak of L.oaks) {
       const p = worldToScreen(L, oak.x, oak.y);
       g.fillStyle = "#0e1810"; g.beginPath(); g.ellipse(p.x, p.y - 8 * p.s, oak.r * 2.1 * p.s, oak.r * 1.6 * p.s, 0, 0, Math.PI * 2); g.fill();
-      g.strokeStyle = "rgba(180,200,140,0.28)"; g.lineWidth = 1;
-      for (let m = -2; m <= 2; m++) { g.beginPath(); g.moveTo(p.x + m * 4 * p.s, p.y - 4 * p.s); g.quadraticCurveTo(p.x + m * 5 * p.s, p.y + 10 * p.s, p.x + m * 3 * p.s, p.y + 16 * p.s); g.stroke(); }
     }
     g.strokeStyle = "#efe6d0"; g.lineWidth = 2; g.beginPath(); g.moveTo(gp.x, gp.y); g.lineTo(gp.x, gp.y - 26 * gp.s); g.stroke();
     g.fillStyle = "#c46a4a"; g.beginPath();
@@ -191,11 +226,8 @@
     const bp = worldToScreen(L, state.ball.x, state.ball.y), z = state.ball.z || 0;
     g.fillStyle = "rgba(0,0,0,0.28)"; g.beginPath(); g.ellipse(bp.x + 2, bp.y + 3, 5, 2.4, 0, 0, Math.PI * 2); g.fill();
     g.fillStyle = "#f6f1e4"; g.beginPath(); g.arc(bp.x, bp.y - z * 0.55, 4.4 + Math.min(4, z * 0.04), 0, Math.PI * 2); g.fill();
-    g.strokeStyle = "rgba(20,20,16,0.55)"; g.lineWidth = 1.4;
-    for (const bird of state.birds) { g.beginPath(); g.moveTo(bird.x - 6, bird.y); g.quadraticCurveTo(bird.x, bird.y - 5 - Math.sin(bird.p) * 3, bird.x + 6, bird.y); g.stroke(); }
     g.fillStyle = "rgba(13,22,16,0.55)"; g.fillRect(16, 16, 168, 36);
-    g.fillStyle = "#d4b56a"; g.font = "13px system-ui"; g.fillText(`Wind ${state.wind.spd} mph ${windArrow()}`, 26, 38);
-    canvas.style.transform = state.shake ? `translate(${(Math.random()-0.5)*state.shake}px, ${(Math.random()-0.5)*state.shake}px)` : "";
+    g.fillStyle = "#d4b56a"; g.font = "13px system-ui"; g.fillText("Wind " + state.wind.spd + " mph " + windArrow(), 26, 38);
   }
   function swing() {
     if (state.flying || state.lie === "Cup") return;
@@ -204,10 +236,26 @@
     state.charging = false; launch(state.power / 100);
   }
   function launch(pwr) {
-    const L = layout(hole()), club = CLUBS[state.club], mul = lieMul(state.lie);
-    const quality = 0.86 + pwr * 0.14;
+    const L = layout(hole()), club = CLUBS[state.club];
+    if (isPutting() || club.id === "PT") {
+      const aim = Math.max(-10, Math.min(10, state.aim));
+      const dist = 34 * pwr * pwr + 1.2 * pwr;
+      const ang = aim * Math.PI / 180;
+      const dest = { x: state.ball.x + Math.sin(ang) * dist, y: state.ball.y + Math.cos(ang) * dist };
+      state.flying = true; state.start = {x: state.ball.x, y: state.ball.y};
+      const from = {x: state.start.x, y: state.start.y}, t0 = performance.now(), dur = 420 + dist * 38;
+      const tick = (now) => {
+        const t = Math.min(1, (now - t0) / dur), ease = 1 - Math.pow(1 - t, 2);
+        state.ball.x = from.x + (dest.x - from.x) * ease;
+        state.ball.y = from.y + (dest.y - from.y) * ease;
+        state.ball.z = 0;
+        if (t < 1) requestAnimationFrame(tick); else finishShot(L, dest, dist);
+      };
+      ping("hit"); requestAnimationFrame(tick); return;
+    }
+    const mul = lieMul(state.lie), quality = 0.86 + pwr * 0.14;
     const carry = club.carry * pwr * mul * quality;
-    const roll = club.roll * pwr * mul * (state.lie === "Green" || club.id === "PT" ? 1.15 : 0.85);
+    const roll = club.roll * pwr * mul * 0.85;
     const windRad = state.wind.dir * Math.PI / 180, aimRad = state.aim * Math.PI / 180;
     const tail = Math.cos(windRad) * state.wind.spd, cross = Math.sin(windRad) * state.wind.spd;
     const carryAdj = carry * (1 + tail * 0.008);
@@ -226,17 +274,22 @@
   function finishShot(L, dest, carryAdj) {
     state.ball.x = dest.x; state.ball.y = dest.y; state.ball.z = 0; state.flying = false;
     let lie = lieAt(L, state.ball);
-    if (lie === "Cup" || dist2(state.ball, {x: L.pinX, y: L.pinY}) < 1.2) {
+    const cupR = isPutting() || CLUBS[state.club].id === "PT" ? 1.65 : 1.2;
+    if (lie === "Cup" || dist2(state.ball, {x: L.pinX, y: L.pinY}) < cupR) {
       state.ball.x = L.pinX; state.ball.y = L.pinY; holeOut(); return;
     }
     state.lie = lie;
-    if (lie === "Water") { state.shake = 5; ping("splash"); say("That's in the drink. Take your drop and add a stroke."); log(`Wet \u00b7 ${carryAdj.toFixed(0)} yds`); state.stroke += 1; }
+    if (lie === "Green") {
+      state.aim = 0; $("aim").value = 0; state.club = pickClubAuto(remain(), "Green");
+      say("On the green. Close-up, north up. Die it at the cup.");
+    }
+    if (lie === "Water") { state.shake = 5; ping("splash"); say("That's in the drink. Take your drop and add a stroke."); log("Wet · " + carryAdj.toFixed(0) + " yds"); state.stroke += 1; }
     else if (lie === "OB") { say("Past the oaks. Reload."); log("OB"); state.ball.x = state.start.x; state.ball.y = state.start.y; state.lie = lieAt(L, state.ball); state.stroke += 2; }
-    else if (lie === "Sand") { say("In the white. Splash it out. Don't be a hero."); log(`Sand \u00b7 ${remain().toFixed(0)} to pin`); state.stroke += 1; }
+    else if (lie === "Sand") { say("In the white. Splash it out."); log("Sand · " + remain().toFixed(0) + " to pin"); state.stroke += 1; }
     else {
       const left = remain();
-      say(left < 12 ? "That's kick-in range. Take the putter." : left < 40 ? "You're on the dance floor. Or close enough." : `${left.toFixed(0)} left. Club for the number.`);
-      log(`${CLUBS[state.club].id} \u00b7 ${carryAdj.toFixed(0)} yds \u00b7 ${lie}`);
+      if (lie !== "Green") say(left < 12 ? "That's kick-in range. Take the putter." : left < 40 ? "You're on the dance floor. Or close enough." : left.toFixed(0) + " left. Club for the number.");
+      log(CLUBS[state.club].id + " · " + carryAdj.toFixed(0) + " yds · " + lie);
       state.stroke += 1;
     }
     state.club = pickClubAuto(remain(), state.lie); state.power = 0; hud();
@@ -245,12 +298,12 @@
   function holeOut() {
     const h = hole(); state.lie = "Cup"; state.scores[state.hi] = state.stroke;
     const diff = state.stroke - h.par;
-    const word = diff <= -2 ? "eagle" : diff === -1 ? "birdie" : diff === 0 ? "par" : diff === 1 ? "bogey" : `+${diff}`;
-    ping("cup"); say(`${h.name}. ${state.stroke} on a par ${h.par}. ${word}.`); log(`In the cup \u00b7 ${word}`); hud();
+    const word = diff <= -2 ? "eagle" : diff === -1 ? "birdie" : diff === 0 ? "par" : diff === 1 ? "bogey" : "+" + diff;
+    ping("cup"); say(h.name + ". " + state.stroke + " on a par " + h.par + ". " + word + "."); log("In the cup · " + word); hud();
     if (state.foursome) fillGuests(state.hi);
     setTimeout(() => {
       if (state.hi < 17) { state.hi += 1; resetBall(); hud(); }
-      else say(`Home Oaks is in. Card sits at ${formatScore()}. The lounge will keep it on the wall.`);
+      else say("Home Oaks is in. Card sits at " + formatScore() + ". The lounge will keep it on the wall.");
     }, 1100);
   }
   function fillGuests(i) {
@@ -293,7 +346,6 @@
     o.type = "sine"; o.frequency.setValueAtTime(f0, now); o.frequency.exponentialRampToValueAtTime(f0 * 0.72, now + 0.09);
     g.gain.setValueAtTime(0.0001, now); g.gain.exponentialRampToValueAtTime(0.035, now + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
     o.connect(g).connect(audio.master); o.start(now); o.stop(now + 0.13);
-    if (Math.random() < 0.45) setTimeout(chirp, 70 + Math.random() * 80);
   }
   function spawnBird() { state.birds.push({x: -20, y: 40 + Math.random() * 120, v: 0.6 + Math.random() * 1.2, p: Math.random() * 6}); }
   function loop() {
@@ -302,7 +354,7 @@
       if (state.power >= 100) { state.power = 100; state.chargeDir = -1; }
       if (state.power <= 4) { state.power = 4; state.chargeDir = 1; }
     }
-    if (state.flyover > 0) { state.cam += 0.02; state.flyover -= 1; }
+    if (state.flyover > 0 && !isPutting()) { state.cam += 0.02; state.flyover -= 1; }
     if (audio.windGain) {
       const target = state.ambient ? 0.012 + state.wind.spd * 0.003 : 0.0001;
       audio.windGain.gain.value += (target - audio.windGain.gain.value) * 0.05;
@@ -314,13 +366,12 @@
   function renderCard() {
     const rows = HOLES.map(h => {
       const s = state.scores[h.n - 1];
-      const g = state.foursome ? state.guest.map(p => p[h.n - 1] ?? "\u00b7").join(" ") : "";
-      return `<tr><td>${h.n}</td><td>${h.name}</td><td>${h.par}</td><td>${h.yards}</td><td>${h.hcp}</td><td>${s ?? "\u00b7"}</td>${state.foursome ? `<td>${g}</td>` : ""}</tr>`;
+      return "<tr><td>" + h.n + "</td><td>" + h.name + "</td><td>" + h.par + "</td><td>" + h.yards + "</td><td>" + h.hcp + "</td><td>" + (s ?? "·") + "</td></tr>";
     }).join("");
-    $("cardMount").innerHTML = `<table class=\"card-table\"><thead><tr><th>#</th><th>Hole</th><th>Par</th><th>Yds</th><th>HCP</th><th>P</th>${state.foursome ? "<th>Foursome</th>" : ""}</tr></thead><tbody>${rows}</tbody></table><p style=\"color:var(--muted)\">Running ${formatScore()}. Isle of Moss is 12.</p>`;
+    $("cardMount").innerHTML = "<table class='card-table'><thead><tr><th>#</th><th>Hole</th><th>Par</th><th>Yds</th><th>HCP</th><th>P</th></tr></thead><tbody>" + rows + "</tbody></table><p style='color:var(--muted)'>Running " + formatScore() + ".</p>";
   }
   function exportJSON() {
-    const payload = { club: "Mosswood Parish Golf Club", location: "St. Martin Parish, Louisiana", tees: "Championship", par: 72, yards: 6842, stage: 1, score: formatScore(), holes: HOLES.map((h, i) => Object.assign({}, h, {strokes: state.scores[i]})), foursome: state.foursome ? state.guest : null };
+    const payload = { club: "Mosswood Parish Golf Club", location: "St. Martin Parish, Louisiana", tees: "Championship", par: 72, yards: 6842, stage: 1, score: formatScore(), holes: HOLES.map((h, i) => Object.assign({}, h, {strokes: state.scores[i]})) };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {type: "application/json"});
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "mosswood-parish-card.json"; a.click();
   }
@@ -331,21 +382,23 @@
       const sx = (e.clientX - rect.left) * (canvas.width / rect.width);
       const sy = (e.clientY - rect.top) * (canvas.height / rect.height);
       const ball = worldToScreen(layout(hole()), state.ball.x, state.ball.y);
-      state.aim = Math.max(-28, Math.min(28, Math.atan2(sx - ball.x, ball.y - sy) * 180 / Math.PI));
-      $("aim").value = state.aim;
+      let ang = Math.atan2(sx - ball.x, ball.y - sy) * 180 / Math.PI;
+      if (isPutting()) ang = Math.max(-10, Math.min(10, ang));
+      else ang = Math.max(-28, Math.min(28, ang));
+      state.aim = ang; $("aim").value = state.aim;
     });
     $("aim").oninput = (e) => { state.aim = +e.target.value; };
-    $("aimL").onclick = () => { state.aim = Math.max(-28, state.aim - 2); $("aim").value = state.aim; };
-    $("aimR").onclick = () => { state.aim = Math.min(28, state.aim + 2); $("aim").value = state.aim; };
-    $("btnAmbient").onclick = () => { ensureAudio(); state.ambient = !state.ambient; $("btnAmbient").classList.toggle("on", state.ambient); $("btnAmbient").setAttribute("aria-pressed", state.ambient); };
-    $("btnCaddie").onclick = () => { state.caddieOn = !state.caddieOn; $("btnCaddie").classList.toggle("on", state.caddieOn); $("caddie").style.opacity = state.caddieOn ? "1" : "0.35"; };
+    $("aimL").onclick = () => { state.aim = Math.max(isPutting() ? -10 : -28, state.aim - 1); $("aim").value = state.aim; };
+    $("aimR").onclick = () => { state.aim = Math.min(isPutting() ? 10 : 28, state.aim + 1); $("aim").value = state.aim; };
+    $("btnAmbient").onclick = () => { ensureAudio(); state.ambient = !state.ambient; $("btnAmbient").classList.toggle("on", state.ambient); };
+    $("btnCaddie").onclick = () => { state.caddieOn = !state.caddieOn; $("btnCaddie").classList.toggle("on", state.caddieOn); };
     $("btnVoice").onclick = () => { state.voice = !state.voice; $("btnVoice").classList.toggle("on", state.voice); if (state.voice) say($("caddie").textContent); };
-    $("btnFly").onclick = () => { state.flyover = 220; };
+    $("btnFly").onclick = () => { if (!isPutting()) state.flyover = 220; };
     $("btnCard").onclick = () => { renderCard(); $("cardModal").classList.remove("hidden"); };
     $("btnCloseCard").onclick = () => $("cardModal").classList.add("hidden");
     $("btnHouse").onclick = () => $("clubhouse").classList.remove("hidden");
     $("btnTee").onclick = () => { ensureAudio(); $("clubhouse").classList.add("hidden"); say(openLine()); };
-    $("btnDemo").onclick = () => { state.foursome = true; $("clubhouse").classList.add("hidden"); say("Foursome's on the tee. You're still hitting first."); };
+    $("btnDemo").onclick = () => { state.foursome = true; $("clubhouse").classList.add("hidden"); say("Foursome's on the tee."); };
     $("btnDrop").onclick = drop;
     $("btnReset").onclick = () => { resetBall(); hud(); };
     $("btnExport").onclick = exportJSON;
@@ -366,8 +419,8 @@
     });
     window.addEventListener("keydown", (e) => {
       if (e.code === "Space") { e.preventDefault(); ensureAudio(); swing(); }
-      if (e.key === "ArrowLeft") { state.aim = Math.max(-28, state.aim - 2); $("aim").value = state.aim; }
-      if (e.key === "ArrowRight") { state.aim = Math.min(28, state.aim + 2); $("aim").value = state.aim; }
+      if (e.key === "ArrowLeft") { state.aim = Math.max(isPutting() ? -10 : -28, state.aim - 1); $("aim").value = state.aim; }
+      if (e.key === "ArrowRight") { state.aim = Math.min(isPutting() ? 10 : 28, state.aim + 1); $("aim").value = state.aim; }
     });
     setInterval(() => { if (state.ambient && Math.random() < 0.45) chirp(); if (Math.random() < 0.28) spawnBird(); }, 1600);
   }
