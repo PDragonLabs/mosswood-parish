@@ -4,9 +4,87 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Mosswood Parish — First tee</title>
+  <meta name="description" content="St. Martin Parish, Louisiana. Eighteen holes under live oaks and Spanish moss. Aim, pick a club, swing." />
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-<p>Loading course from local build. If you see this, the full GUI did not attach.</p>
-<script src="./game.js"></script>
+<div id="app">
+    <header class="top">
+      <div class="brand">Mosswood Parish</div>
+      <div class="hole-title" id="holeTitle">Cypress Gate <small>Par 4 · 392</small></div>
+      <div class="toggles">
+        <button id="btnAmbient" class="on" aria-pressed="true">Wind + birds</button>
+        <button id="btnCaddie" class="on" aria-pressed="true">Caddie</button>
+        <button id="btnVoice" aria-pressed="false">Voices</button>
+        <button id="btnFly">Flyover</button>
+        <button id="btnCard">Card</button>
+        <button id="btnHouse">Clubhouse</button>
+      </div>
+    </header>
+    <div class="stage">
+      <canvas id="course" width="1280" height="800" aria-label="Mosswood Parish hole map"></canvas>
+      <aside class="hud">
+        <div class="statgrid">
+          <div class="stat"><span>To pin</span><b id="sDist">392 yds</b></div>
+          <div class="stat"><span>Stroke</span><b id="sStroke">1</b></div>
+          <div class="stat"><span>Wind</span><b id="sWind" class="wind-flag">6 mph →</b></div>
+          <div class="stat"><span>Lie</span><b id="sLie">Tee</b></div>
+          <div class="stat"><span>Score</span><b id="sScore">E</b></div>
+          <div class="stat"><span>Club</span><b id="sClub">Driver</b></div>
+        </div>
+        <div class="caddie" id="caddie">Live oaks on the right. Take what the hole gives you.</div>
+        <div class="clubs" id="clubs"></div>
+        <div class="aim-row">
+          <button type="button" id="aimL" aria-label="Aim left">◀</button>
+          <input id="aim" type="range" min="-28" max="28" value="0" />
+          <button type="button" id="aimR" aria-label="Aim right">▶</button>
+        </div>
+        <div class="meter-wrap">
+          <div class="meter" id="meter"><i id="meterFill"></i></div>
+          <button class="primary" id="btnSwing">Swing</button>
+        </div>
+        <div class="log" id="log"></div>
+      </aside>
+    </div>
+    <footer class="bar">
+      <span>St. Martin Parish · Championship tees · Par 72 · 6,842</span>
+      <span class="grow" id="footHole">Hole 1 of 18</span>
+      <button type="button" id="btnDrop">Drop</button>
+      <button type="button" id="btnReset">Replay hole</button>
+      <button type="button" id="btnExport">Export JSON</button>
+      <label class="toggles"><input id="fileIn" type="file" accept="application/json" hidden /> <button type="button" id="btnImport">Import</button></label>
+    </footer>
+  </div>
+
+  <div class="clubhouse" id="clubhouse" role="dialog" aria-label="Clubhouse">
+    <div class="room">
+      <div class="place">St. Martin Parish · Louisiana</div>
+      <h1 id="roomTitle">Mosswood Parish<br/>Golf Club</h1>
+      <p id="roomCopy">Eighteen holes under live oaks and Spanish moss. The lounge still has last night’s card on the wall. Wind off the cane. Birds in the oaks.</p>
+      <div class="rooms">
+        <button type="button" data-room="gate">Gate</button>
+        <button type="button" data-room="lounge">Lounge</button>
+        <button type="button" data-room="lockers">Lockers</button>
+        <button type="button" data-room="back">Back room</button>
+      </div>
+      <div class="actions">
+        <button type="button" class="primary" id="btnTee" style="background:var(--gold);color:var(--bg);border-color:var(--gold)">Tee off · Cypress Gate</button>
+        <button type="button" id="btnDemo">Demo foursome</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="cardModal">
+    <div class="room">
+      <div class="place">Championship card</div>
+      <h1>The card</h1>
+      <div id="cardMount"></div>
+      <div class="actions">
+        <button type="button" id="btnCloseCard">Close</button>
+      </div>
+    </div>
+  </div>
+  <script src="./data.js"></script>
+  <script src="./play.js"></script>
 </body>
 </html>
