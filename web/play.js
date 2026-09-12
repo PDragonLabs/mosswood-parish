@@ -18,10 +18,7 @@
   }
   function layout(h) {
     const rnd = seed(h.n * 17 + h.yards);
-    const length = h.yards;
-    const pinX = (rnd() - 0.5) * 8;
-    const greenR = h.par === 3 ? 14 : 16;
-    const fw = h.par === 3 ? 22 : 28;
+    const length = h.yards, pinX = (rnd() - 0.5) * 8, greenR = h.par === 3 ? 14 : 16, fw = h.par === 3 ? 22 : 28;
     const hazards = [];
     if (h.island) hazards.push({kind: "water", x: 0, y: length * 0.42, w: 220, hh: length * 0.72});
     else if (h.water > 0.15) {
@@ -39,15 +36,28 @@
     }
     return {length, pinX, pinY: length - 3 - rnd() * 4, greenR, fw, hazards, bunkers, oaks, dog: h.dog};
   }
-  function centerlineX(L, y) {
-    const t = Math.max(0, Math.min(1, y / L.length));
-    return Math.sin(t * Math.PI) * L.dog;
-  }
+  function centerlineX(L, y) { return Math.sin(Math.max(0, Math.min(1, y / L.length)) * Math.PI) * L.dog; }
   function dist2(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
   function remain() { const L = layout(hole()); return dist2(state.ball, {x: L.pinX, y: L.pinY}); }
   function isPutting() {
     const club = CLUBS[state.club];
     return state.lie === "Green" || state.lie === "Cup" || (club && club.id === "PT" && remain() < 40);
+  }
+  function normAim(a) { a = a % 360; if (a < 0) a += 360; return a; }
+  function aimToPin() {
+    const L = layout(hole());
+    state.aim = normAim(Math.atan2(L.pinX - state.ball.x, L.pinY - state.ball.y) * 180 / Math.PI);
+  }
+  function syncAimSlider() {
+    const el = $("aim"); if (!el) return;
+    if (isPutting()) { el.min = "0"; el.max = "359"; el.step = "1"; state.aim = normAim(state.aim); }
+    else { el.min = "-28"; el.max = "28"; el.step = "1"; state.aim = Math.max(-28, Math.min(28, state.aim)); }
+    el.value = state.aim;
+  }
+  function screenToWorld(L, sx, sy) {
+    if (!isPutting()) return null;
+    const w = canvas.width, ht = canvas.height, span = Math.max(22, L.greenR * 2.8), px = Math.min(w, ht) * 0.72 / span;
+    return { x: L.pinX + (sx - w * 0.5) / px, y: L.pinY - (sy - ht * 0.42) / px };
   }
   function lieAt(L, p) {
     if (p.y < -8 || p.y > L.length + 18 || Math.abs(p.x) > 110) return "OB";
@@ -73,7 +83,8 @@
   function resetBall() {
     state.ball = {x: 0, y: 0, z: 0}; state.start = {x: 0, y: 0}; state.lie = "Tee";
     state.stroke = 1; state.flying = false; state.charging = false; state.power = 0; state.aim = 0;
-    $("aim").value = 0; state.club = pickClubAuto(hole().yards, "Tee"); newWind(); say(openLine());
+    $("aim").min = "-28"; $("aim").max = "28"; $("aim").value = 0;
+    state.club = pickClubAuto(hole().yards, "Tee"); newWind(); say(openLine());
   }
   function newWind() {
     const rnd = seed(Date.now() % 99991 + hole().n);
@@ -121,15 +132,14 @@
   }
   function log(line) { const el = $("log"); el.innerHTML = "<div>" + line + "</div>" + el.innerHTML; }
   function hud() {
-    const h = hole();
-    const left = remain();
+    const h = hole(), left = remain();
     $("holeTitle").innerHTML = h.name + " <small>Par " + h.par + " · " + h.yards + "</small>";
     $("footHole").textContent = "Hole " + h.n + " of 18";
     $("sDist").textContent = isPutting() ? Math.max(1, left * 3).toFixed(0) + " ft" : left.toFixed(0) + " yds";
-    if (isPutting()) { state.aim = Math.max(-10, Math.min(10, state.aim)); $("aim").value = state.aim; }
+    syncAimSlider();
     $("sStroke").textContent = String(state.stroke);
     $("sWind").textContent = state.wind.spd + " mph " + windArrow();
-    $("sLie").textContent = isPutting() ? "Green · N" : state.lie;
+    $("sLie").textContent = isPutting() ? "Green · " + Math.round(normAim(state.aim)) + "°" : state.lie;
     $("sScore").textContent = formatScore();
     $("sClub").textContent = CLUBS[state.club].name;
     $("meterFill").style.width = Math.max(0, Math.min(100, state.power)) + "%";
@@ -142,8 +152,7 @@
   function worldToScreen(L, x, y) {
     const w = canvas.width, ht = canvas.height;
     if (isPutting()) {
-      const span = Math.max(22, L.greenR * 2.8);
-      const px = Math.min(w, ht) * 0.72 / span;
+      const span = Math.max(22, L.greenR * 2.8), px = Math.min(w, ht) * 0.72 / span;
       return {x: w * 0.5 + (x - L.pinX) * px, y: ht * 0.42 - (y - L.pinY) * px, s: px / 4};
     }
     const padT = 50, padB = 70, t = y / L.length, scale = 0.55 + t * 0.9;
@@ -156,7 +165,12 @@
     g.fillStyle = "#4e8a48"; g.beginPath(); g.ellipse(c.x, c.y, L.greenR * 2.7 * c.s, L.greenR * 2.7 * c.s, 0, 0, Math.PI * 2); g.fill();
     g.fillStyle = "#0a120e"; g.beginPath(); g.arc(c.x, c.y, Math.max(6, 4.4 * c.s), 0, Math.PI * 2); g.fill();
     g.strokeStyle = "#efe6d0"; g.lineWidth = 2; g.stroke();
-    g.fillStyle = "#d4b56a"; g.font = "14px system-ui"; g.fillText("N", w * 0.5 - 5, 28); g.fillText("green · north up", 20, 28);
+    g.fillStyle = "#d4b56a"; g.font = "14px system-ui";
+    g.fillText("N", w * 0.5 - 5, 28);
+    g.fillText("S", w * 0.5 - 5, ht - 18);
+    g.fillText("W", 16, ht * 0.42);
+    g.fillText("E", w - 28, ht * 0.42);
+    g.fillText("green · north-up · 360", 20, 48);
     g.fillStyle = "#c4a36a";
     for (const bnk of L.bunkers) {
       const p = worldToScreen(L, bnk.x, bnk.y);
@@ -171,7 +185,7 @@
       if (!state.flying) {
         const left = remain();
         const dist = Math.max(2, Math.min(36, left * (state.power > 4 ? state.power / 100 * 2.2 : 1.15)));
-        const ang = Math.max(-10, Math.min(10, state.aim)) * Math.PI / 180;
+        const ang = normAim(state.aim) * Math.PI / 180;
         g.setLineDash([5, 5]); g.strokeStyle = "rgba(239,230,208,0.85)"; g.lineWidth = 2; g.beginPath();
         const a0 = worldToScreen(L, state.ball.x, state.ball.y);
         const a1 = worldToScreen(L, state.ball.x + Math.sin(ang) * dist, state.ball.y + Math.cos(ang) * dist);
@@ -238,9 +252,8 @@
   function launch(pwr) {
     const L = layout(hole()), club = CLUBS[state.club];
     if (isPutting() || club.id === "PT") {
-      const aim = Math.max(-10, Math.min(10, state.aim));
       const dist = 34 * pwr * pwr + 1.2 * pwr;
-      const ang = aim * Math.PI / 180;
+      const ang = normAim(state.aim) * Math.PI / 180;
       const dest = { x: state.ball.x + Math.sin(ang) * dist, y: state.ball.y + Math.cos(ang) * dist };
       state.flying = true; state.start = {x: state.ball.x, y: state.ball.y};
       const from = {x: state.start.x, y: state.start.y}, t0 = performance.now(), dur = 420 + dist * 38;
@@ -280,8 +293,9 @@
     }
     state.lie = lie;
     if (lie === "Green") {
-      state.aim = 0; $("aim").value = 0; state.club = pickClubAuto(remain(), "Green");
-      say("On the green. Close-up, north up. Die it at the cup.");
+      state.club = pickClubAuto(remain(), "Green");
+      aimToPin(); syncAimSlider();
+      say("On the green. North-up map. Click to aim — full 360. Roll it at the cup.");
     }
     if (lie === "Water") { state.shake = 5; ping("splash"); say("That's in the drink. Take your drop and add a stroke."); log("Wet · " + carryAdj.toFixed(0) + " yds"); state.stroke += 1; }
     else if (lie === "OB") { say("Past the oaks. Reload."); log("OB"); state.ball.x = state.start.x; state.ball.y = state.start.y; state.lie = lieAt(L, state.ball); state.stroke += 2; }
@@ -378,18 +392,25 @@
   function bind() {
     $("btnSwing").onclick = () => { ensureAudio(); swing(); };
     canvas.addEventListener("pointerdown", (e) => {
+      const L = layout(hole());
       const rect = canvas.getBoundingClientRect();
       const sx = (e.clientX - rect.left) * (canvas.width / rect.width);
       const sy = (e.clientY - rect.top) * (canvas.height / rect.height);
-      const ball = worldToScreen(layout(hole()), state.ball.x, state.ball.y);
-      let ang = Math.atan2(sx - ball.x, ball.y - sy) * 180 / Math.PI;
-      if (isPutting()) ang = Math.max(-10, Math.min(10, ang));
-      else ang = Math.max(-28, Math.min(28, ang));
-      state.aim = ang; $("aim").value = state.aim;
+      if (isPutting()) {
+        const wpt = screenToWorld(L, sx, sy);
+        if (wpt) {
+          state.aim = normAim(Math.atan2(wpt.x - state.ball.x, wpt.y - state.ball.y) * 180 / Math.PI);
+          syncAimSlider();
+        }
+        return;
+      }
+      const ball = worldToScreen(L, state.ball.x, state.ball.y);
+      state.aim = Math.max(-28, Math.min(28, Math.atan2(sx - ball.x, ball.y - sy) * 180 / Math.PI));
+      $("aim").value = state.aim;
     });
     $("aim").oninput = (e) => { state.aim = +e.target.value; };
-    $("aimL").onclick = () => { state.aim = Math.max(isPutting() ? -10 : -28, state.aim - 1); $("aim").value = state.aim; };
-    $("aimR").onclick = () => { state.aim = Math.min(isPutting() ? 10 : 28, state.aim + 1); $("aim").value = state.aim; };
+    $("aimL").onclick = () => { if (isPutting()) state.aim = normAim(state.aim - 8); else state.aim = Math.max(-28, state.aim - 2); syncAimSlider(); };
+    $("aimR").onclick = () => { if (isPutting()) state.aim = normAim(state.aim + 8); else state.aim = Math.min(28, state.aim + 2); syncAimSlider(); };
     $("btnAmbient").onclick = () => { ensureAudio(); state.ambient = !state.ambient; $("btnAmbient").classList.toggle("on", state.ambient); };
     $("btnCaddie").onclick = () => { state.caddieOn = !state.caddieOn; $("btnCaddie").classList.toggle("on", state.caddieOn); };
     $("btnVoice").onclick = () => { state.voice = !state.voice; $("btnVoice").classList.toggle("on", state.voice); if (state.voice) say($("caddie").textContent); };
@@ -419,8 +440,8 @@
     });
     window.addEventListener("keydown", (e) => {
       if (e.code === "Space") { e.preventDefault(); ensureAudio(); swing(); }
-      if (e.key === "ArrowLeft") { state.aim = Math.max(isPutting() ? -10 : -28, state.aim - 1); $("aim").value = state.aim; }
-      if (e.key === "ArrowRight") { state.aim = Math.min(isPutting() ? 10 : 28, state.aim + 1); $("aim").value = state.aim; }
+      if (e.key === "ArrowLeft") { if (isPutting()) state.aim = normAim(state.aim - 8); else state.aim = Math.max(-28, state.aim - 2); syncAimSlider(); }
+      if (e.key === "ArrowRight") { if (isPutting()) state.aim = normAim(state.aim + 8); else state.aim = Math.min(28, state.aim + 2); syncAimSlider(); }
     });
     setInterval(() => { if (state.ambient && Math.random() < 0.45) chirp(); if (Math.random() < 0.28) spawnBird(); }, 1600);
   }
